@@ -104,6 +104,8 @@ function evaluate(list)
 }
 
 const run = text => {
+	text = text.replace(/--.+/g, '')
+
 	const statements = []
 	for (let i = 0; i < text.length; ++i) {
 		if (text[i] !== '(') continue
@@ -119,14 +121,20 @@ const run = text => {
 }
 
 console.log(run(`
+-- define XOR
 (def (xor a b) (or
 	(and a (not b))
 	(and b (not a))
 ))
 
+-- define equality
 (def (eq a b) (not (xor a b)))
+
+-- define function that always returns zero
 (def (zero x) (xor x x))
+
+-- defines function that always returns 1
 (def (yes a b) (eq (zero a) (zero b)))
 
-(yes p q)
+(yes p q) -- prints function that always returns 1
 `).map(x => x).join('\n'))
