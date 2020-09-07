@@ -125,6 +125,8 @@ console.log(run(`
 ))
 
 (def (eq a b) (not (xor a b)))
+(def (zero x) (xor x x))
+(def (yes a b) (eq (zero a) (zero b)))
 
-(eq a b)
-`))
+(yes p q)
+`).map(x => x).join('\n'))
