@@ -1,0 +1,40 @@
+<script src='./straight.js'></script>
+
+<textarea id='input' autofocus>
+-- boolean expression simplification tool
+-- press shift+enter to evaluate!
+
+-- define XOR
+(def (xor a b) (or
+	(and a (not b))
+	(and b (not a))
+))
+
+-- define equality
+(def (eq a b) (not (xor a b)))
+
+-- define function that always returns zero
+(def (zero x) (xor x x))
+
+-- defines function that always returns 1
+(def (yes a b) (eq (zero a) (zero b)))
+
+(yes p q) -- prints function that always returns 1
+</textarea>
+<textarea id='output'></textarea>
+
+<style>
+body, textarea { margin: 0; padding: 0 }
+textarea { width: 100%; height: 50%; border: none; resize: none; padding: 1em }
+</style>
+
+<script>
+const INPUT  = document.querySelector('#input')
+const OUTPUT = document.querySelector('#output')
+
+INPUT.addEventListener('keydown', e => {
+	if (!(e.shiftKey && e.key === 'Enter')) return
+
+	OUTPUT.value = run(INPUT.value).join('\n')
+})
+</script>
