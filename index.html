@@ -36,5 +36,7 @@ INPUT.addEventListener('keydown', e => {
 	if (!(e.shiftKey && e.key === 'Enter')) return
 
 	OUTPUT.value = run(INPUT.value).join('\n')
+
+	e.preventDefault()
 })
 </script>

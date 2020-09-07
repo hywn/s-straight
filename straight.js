@@ -117,7 +117,11 @@ const run = text => {
 	const spaced = str => str.replace(/(\(|\))/g, ' $1 ')
 
 	// double iteration who????
-	return statements.map(spaced).map(parse).map(evaluate).flat()
+	const ran = statements.map(spaced).map(parse).map(evaluate).flat()
+
+	v = 0
+
+	return ran
 }
 
 console.log(run(`
