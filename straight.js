@@ -37,7 +37,7 @@ function parse(text) {
 	throw 'paren error'
 }
 
-const builtin = cmd => (...xs) => [`${cmd.toUpperCase()}(${xs.join(', ')})`]
+const builtin = cmd => (...xs) => `${cmd.toUpperCase()}(${xs.join(', ')})`
 const functions = {
 	and: builtin('and'),
 	or:  builtin('or'),
@@ -50,13 +50,14 @@ const cmap = map => list => typeof(list) === 'string'
 	: list.map(cmap(map))
 
 let v = 1
+let aliases = {}
 let env = {}
 // [node] => [statements]
 function evaluate(list)
 {
 	const [head, ...args] = list
 	if (typeof(head) !== 'string')
-		return list.map(evaluate).flat()
+		return list.map(evaluate).join('')
 
 	const cmd = head.toLowerCase()
 
@@ -71,36 +72,46 @@ function evaluate(list)
 			return evaluate(cmap(map)(body))
 		}
 
-		return []
+		return ''
 	}
 
 	if (cmd === 'let') {
 		const [varname, varval] = args
-		const stacked = evaluate(varval)
-		env[varname] = stacked.pop()
-		stacked.push(`${varname} = ${env[varname]}`)
-		return stacked
+
+		const val = evaluate(varval)
+		const existing = (Object.entries(env).find(([k, v]) => v === val) || [])[0]
+
+		if (!existing) {
+			const newvar = `R${v++}`
+			env[newvar] = val
+			aliases[varname] = newvar
+		} else {
+			aliases[varname] = existing
+		}
+
+		return ''
 	}
 
 	const fun = functions[cmd]
 	if (!fun) throw `command '${cmd}' was called but not found`
 
 	// get all necessary statements to evaluate this function
-	const collected = []
 	const vargs = args.map(x => {
 		if (typeof(x) === 'string')
-			return x
+			return aliases[x] || x
+
+		const val = evaluate(x)
+
+		const existing = (Object.entries(env).find(([k, v]) => v === val) || [])[0]
+		if (existing)
+			return existing
 
 		const var_name = `R${v++}`
-
-		collected.push(...evaluate(x))
-		collected.push(`${var_name} = ${collected.pop()}`)
-
+		env[var_name] = val
 		return var_name
 	})
 
-	// return all necessary statements + this function's evaluated statements
-	return [...collected, ...fun(...vargs)]
+	return fun(...vargs)
 }
 
 const spaced = str => str.replace(/(\(|\))/g, ' $1 ')
@@ -109,5 +120,7 @@ const run = text => {
 
 	text = text.replace(/--.+/g, '')
 
-	return evaluate(parse(spaced(`(${text})`)))
+	const val = evaluate(parse(spaced(`(${text})`)))
+
+	return [...Object.entries(env), ['', val]]
 }
