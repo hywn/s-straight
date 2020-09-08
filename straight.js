@@ -1,13 +1,12 @@
 // text => index into text => first substring that contains balanced paren pair
 const nb_paren = text => start => {
-	let i   = start
 	let bal = 0
 
-	for (; i<text.length; ++i) {
-		if (text[i] === '(') ++bal
-		else if (text[i] === ')')
-			if (--bal === 0)
-				return text.substring(start, i + 1)
+	for (let i = start; i < text.length; ++i) {
+		if (text[i] === '(')
+			++bal
+		else if (text[i] === ')' && --bal === 0)
+			return text.substring(start, i + 1)
 	}
 }
 
@@ -15,53 +14,42 @@ const nb_paren = text => start => {
 // node = [node] | string
 function parse(text) {
 
-	const nbbb = nb_paren(text)
-
-	let i = 0
-
-	while(text[i] !== '(') i += 1
-
-	++i
-
+	let word = ''
 	const list = []
 
-	let word = ''
-	for(; i<text.length; ++i) {
+	for (let i = text.indexOf('(') + 1; i < text.length; ++i) {
 		const c = text[i]
-		if (c === ')') break
-		if (c === '(') {
-			const str = nbbb(i)
+
+		if (c === ')') {
+			return list
+		} else if (c === '(') {
+			const str = nb_paren(text)(i)
 			list.push(parse(str))
 			i += str.length - 1
-		}
-		if (c.match(/\w/))
+		} else if (c.match(/\w/)) {
 			word += c
-		else {
-			if (word) {
-				list.push(word)
-				word = ''
-			}
+		} else if (word) {
+			list.push(word)
+			word = ''
 		}
 	}
 
-	return list
+	throw 'paren error'
 }
 
 const builtin = cmd => (...xs) => [`${cmd.toUpperCase()}(${xs.join(', ')})`]
-
 const functions = {
 	and: builtin('and'),
 	or:  builtin('or'),
 	not: builtin('not')
 }
 
-let v = 1
-
 // parse list => parse list with 'args' recursively replaced based on map
 const cmap = map => list => typeof(list) === 'string'
 	? map[list] || list
 	: [list[0], ...list.slice(1).map(cmap(map))]
 
+let v = 1
 // [node] => [statements]
 function evaluate(list)
 {
@@ -103,25 +91,13 @@ function evaluate(list)
 	return [...collected, ...fun(...vargs)]
 }
 
+const spaced = str => str.replace(/(\(|\))/g, ' $1 ')
 const run = text => {
+	v = 1
+
 	text = text.replace(/--.+/g, '')
 
-	const statements = []
-	for (let i = 0; i < text.length; ++i) {
-		if (text[i] !== '(') continue
-		const str = nb_paren(text)(i)
-		statements.push(str)
-		i += str.length - 1
-	}
-
-	const spaced = str => str.replace(/(\(|\))/g, ' $1 ')
-
-	// double iteration who????
-	const ran = statements.map(spaced).map(parse).map(evaluate).flat()
-
-	v = 0
-
-	return ran
+	return parse(spaced(`(${text})`)).map(evaluate).flat()
 }
 
 console.log(run(`
