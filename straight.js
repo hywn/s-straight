@@ -47,13 +47,17 @@ const functions = {
 // parse list => parse list with 'args' recursively replaced based on map
 const cmap = map => list => typeof(list) === 'string'
 	? map[list] || list
-	: [list[0], ...list.slice(1).map(cmap(map))]
+	: list.map(cmap(map))
 
 let v = 1
+let env = {}
 // [node] => [statements]
 function evaluate(list)
 {
 	const [head, ...args] = list
+	if (typeof(head) !== 'string')
+		return list.map(evaluate).flat()
+
 	const cmd = head.toLowerCase()
 
 	// store a new function
@@ -68,6 +72,14 @@ function evaluate(list)
 		}
 
 		return []
+	}
+
+	if (cmd === 'let') {
+		const [varname, varval] = args
+		const stacked = evaluate(varval)
+		env[varname] = stacked.pop()
+		stacked.push(`${varname} = ${env[varname]}`)
+		return stacked
 	}
 
 	const fun = functions[cmd]
@@ -97,24 +109,5 @@ const run = text => {
 
 	text = text.replace(/--.+/g, '')
 
-	return parse(spaced(`(${text})`)).map(evaluate).flat()
+	return evaluate(parse(spaced(`(${text})`)))
 }
-
-console.log(run(`
--- define XOR
-(def (xor a b) (or
-	(and a (not b))
-	(and b (not a))
-))
-
--- define equality
-(def (eq a b) (not (xor a b)))
-
--- define function that always returns zero
-(def (zero x) (xor x x))
-
--- defines function that always returns 1
-(def (yes a b) (eq (zero a) (zero b)))
-
-(yes p q) -- prints function that always returns 1
-`).map(x => x).join('\n'))
