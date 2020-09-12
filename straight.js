@@ -41,7 +41,8 @@ const builtin = cmd => (...xs) => `${cmd.toUpperCase()}(${xs.join(', ')})`
 const functions = {
 	and: builtin('and'),
 	or:  builtin('or'),
-	not: builtin('not')
+	not: builtin('not'),
+	nand: builtin('nand')
 }
 
 // parse list => parse list with 'args' recursively replaced based on map
@@ -110,13 +111,14 @@ function evaluate(list)
 		env[var_name] = val
 		return var_name
 	})
-
 	return fun(...vargs)
 }
 
 const spaced = str => str.replace(/(\(|\))/g, ' $1 ')
 const run = text => {
 	v = 1
+	aliases = {}
+	env = {}
 
 	text = text.replace(/--.+/g, '')
 
