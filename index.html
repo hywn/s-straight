@@ -35,7 +35,7 @@ const OUTPUT = document.querySelector('#output')
 INPUT.addEventListener('keydown', e => {
 	if (!(e.shiftKey && e.key === 'Enter')) return
 
-	OUTPUT.value = run(INPUT.value).join('\n')
+	OUTPUT.value = run(INPUT.value).map(([x, y]) => `    ${x} = ${y}`).join('\n')
 
 	e.preventDefault()
 })
