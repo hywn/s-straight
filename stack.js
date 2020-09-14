@@ -37,7 +37,7 @@ const run = program => {
 	let defmode = false
 	let def = []
 
-	program.match(/\w+|\[|\]/g).forEach(word => {
+	program.replace(/--.+/g, '').match(/\w+|\[|\]/g).forEach(word => {
 		if (word === ']' && defmode) {
 			const [name, ...words] = def
 			cmd[name] = () => words.forEach(w => cmd[w]())
