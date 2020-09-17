@@ -92,3 +92,95 @@ it seems to work atm but havent rlly tested w/ anything except simple xor progra
 	or
 ]
 ```
+
+#### more stack-based programs
+so i used the language for more problems, and it was actually pretty nice. the following is a 'greater than' circuit for comparing two 4-bit numbers. the stack-based nature was very nice for breaking a problem down into one step that could pipeline into the same step, kinda like iteration/recursion?
+
+```
+[ gt not and ] -- a > b
+[ nlt not or ] -- a >= b
+
+-- takes stack: a b cmp
+-- where a and b are new least-significant bits
+-- and cmp is the last comparison
+[ cmpstep
+	rot rot    -- cmp a b
+	2dup gt    -- cmp a b gt
+	rot rot    -- cmp gt a b
+	nlt        -- cmp gt nlt
+	rot and or -- newcmp
+]
+
+[ gr4
+	gt
+	cmpstep cmpstep cmpstep
+]
+
+a3 b3 a2 b2 a1 b1 a0 b0 -- a3 is most-significant
+gr4
+```
+
+the following is a program to make 4-bit adder with only NANDs. I added `push` and `pop` words which push/pop from an internal stack, which seems kinda weird using a stack inside of another stack and I wonder if this is where I would use memory in something like forth
+```
+-- !builtin 2->1 nand
+
+[ not dup nand ]
+[ and nand not ]
+[ or  not swap not swap nand ]
+
+-- vanilla XOR
+[ xor 2dup swap not and rot rot not and or ]
+
+[ xor -- more efficient NAND XOR
+	2dup nand -- a b temp1
+	dup rot   -- a temp1 temp1 b
+	nand      -- a temp1 nand
+	rot rot nand nand
+]
+
+[ carry and ]
+[ add   xor ]
+
+-- adds 1-bit to 2-bit: a b c -> (ab + c)
+[ sadd
+	2dup -- a b c b c
+	carry rot rot add -- a carry add
+	rot rot add swap
+]
+
+-- 1-bit add with carry (takes 3 inputs)
+[ fadd
+	2dup -- a b c b c
+	carry rot rot add -- a carry add
+	rot sadd
+]
+-- a b c fadd3
+
+-- 4-bit add no carry
+[ add4
+	2dup carry rot rot add push -- sets up carry add
+	fadd push
+	fadd push
+	fadd push drop
+
+	pop pop pop pop
+]
+a0 b0 a1 b1 a2 b2 a3 b3 add4
+```
+
+i wrote one other program, [a multiplier](https://gist.github.com/hywn/6b0d521714101c71e0cf167d092e430d), which was very hacked-together and not very good. it basically did
+
+```
+accept 4-bit a, 4-bit b
+bit done = zero? b
+4-bit counter = b
+4-bit result = 0
+15 times do:
+	result += (counter & donedonedonedone)
+	counter -= (0b1111 & donedonedonedone)
+	done = zero? counter
+```
+
+even right now I want to go back and move `done` completely into the loop, but I also don't really want to touch this problem again 🙂
+
+also to solve it, I added `pushN` and `popN` like 'dynamic' words which would recognize any N and make a new stack and let you use it, which um idk seems not like a great idea
